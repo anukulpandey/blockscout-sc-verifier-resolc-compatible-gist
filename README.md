@@ -137,3 +137,105 @@ Compiled Flipper contract bytecode (hex): 608060405234610030575b61001a6100156100
 ```
 
 which is correct :))
+
+Now going through `@blockscout-rs/smart-contract-verifier` to see what functions does it call on `solc` for verification of contracts and compilation.
+
+Let's start with `standard_json` verification, this is the code in `@blockscout-rs/smart-contract-verifier`.
+
+```
+pub async fn verify(
+    compilers: &EvmCompilersPool<SolcCompiler>,
+    request: VerificationRequest,
+) -> Result<VerificationResult, Error> {
+    println!(
+        "[verify] Starting verification for contract: {:?}, compiler_version: {:?}",
+        request.contract, request.compiler_version
+    );
+
+    let to_verify = vec![request.contract];
+
+    let results = verify::compile_and_verify(
+        to_verify,
+        compilers,
+        &request.compiler_version,
+        request.content,
+    )
+    .await?;
+
+    let result = results
+        .into_iter()
+        .next()
+        .expect("we sent exactly one contract to verify");
+
+    println!("[verify] Verification result: {:?}", result);
+
+    Ok(result)
+}
+```
+
+this compile_and_verify looks like
+
+```
+pub async fn compile_and_verify<C: EvmCompiler>(
+    to_verify: Vec<OnChainContract>,
+    compilers: &EvmCompilersPool<C>,
+    compiler_version: &DetailedVersion,
+    compiler_input: C::CompilerInput,
+) -> Result<Vec<VerificationResult>, Error> {
+    let compilation_result =
+        compilation::compile(compilers, compiler_version, compiler_input).await?;
+
+    let mut verification_results = vec![];
+    for contract in to_verify {
+        verification_results.push(verify_on_chain_contract(contract, &compilation_result)?);
+    }
+
+    Ok(verification_results)
+}
+```
+
+think I should just change the `compilation_result` here, let's see what `compile` does:
+
+```
+
+pub async fn compile<C: EvmCompiler>(
+    compilers: &EvmCompilersPool<C>,
+    compiler_version: &DetailedVersion,
+    mut compiler_input: C::CompilerInput,
+) -> Result<CompilationResult, Error> {
+    let compiler_version = compilers.normalize_compiler_version(compiler_version)?;
+    let compiler_path = compilers.fetch_compiler(&compiler_version).await?;
+
+    compiler_input.normalize_output_selection(compiler_version.to_semver());
+    let compiler_output = compilers
+        .compile(&compiler_path, &compiler_version, &compiler_input)
+        .await?;
+
+    let modified_compiler_input = compiler_input.modified_copy();
+    let modified_compiler_output = compilers
+        .compile(&compiler_path, &compiler_version, &modified_compiler_input)
+        .await?;
+
+    let mut per_contract_artifacts = generate_per_contract_artifacts(compiler_output.output)?;
+    let modified_per_contract_artifacts =
+        generate_per_contract_artifacts(modified_compiler_output.output)?;
+
+    let language = compiler_input.language();
+    append_cbor_auxdata(
+        language,
+        &mut per_contract_artifacts,
+        &modified_per_contract_artifacts,
+    )?;
+
+    Ok(CompilationResult {
+        language,
+        compiler_version: compiler_version.to_string(),
+        compiler_settings: compiler_input.settings(),
+        sources: compiler_input.sources(),
+        artifacts: per_contract_artifacts,
+    })
+}
+```
+
+hmm it fetches the compiler version from here, not sure how these compiler versions are there and why not single compiler from solc like i have, maybe they have it from somewhere else, should check from where the compiler is coming
+
