@@ -77,3 +77,17 @@ by running the following
 brew tap ethereum/ethereum
 brew install solidity
 ```
+
+Verified it using
+
+```
+solc --version
+```
+
+got this
+
+```
+anukul@Mac ~ % solc --version            
+solc, the solidity compiler commandline interface
+Version: 0.8.30+commit.73712a01.Darwin.appleclang
+```
