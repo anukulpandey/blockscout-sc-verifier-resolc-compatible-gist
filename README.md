@@ -33,3 +33,12 @@ then for installing it, ran
 ```
 cargo run
 ```
+
+Need to install the `resolc` binary locally too. So downloaded it from [here](https://github.com/paritytech/revive/releases)
+
+and added it to path after installation
+
+```
+sudo mv /Users/anukul/Desktop/llvm-rust/resolc /usr/local/bin/resolc
+sudo chmod +x /usr/local/bin/resolc
+```
