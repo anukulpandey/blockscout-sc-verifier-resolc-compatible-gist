@@ -379,5 +379,8 @@ impl evm_compilers::EvmCompiler for SolcCompiler {
 }
 ```
 
-For older compiler versions → it calls solc_compiler_cli::compile_using_cli.
-For newer versions → it calls foundry_compilers_new::solc::Solc::async_compile_output
+For older compiler versions i.e `<0.4.11` :
+   it calls `solc_compiler_cli::compile_using_cli`
+   
+For newer versions:
+   it calls `foundry_compilers_new::solc::Solc::async_compile_output`
