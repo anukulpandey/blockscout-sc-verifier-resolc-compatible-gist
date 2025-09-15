@@ -450,3 +450,13 @@ serde_json = "1.0"
 hex = "0.4" 
 revive-llvm-context = "0.3.0"
 ```
+
+3:28 AM 
+
+next step should be to analyse how this block is working and see the output code
+
+<img width="860" height="391" alt="Screenshot 2025-09-16 at 3 28 10 AM" src="https://github.com/user-attachments/assets/f9fb0dff-62c6-4222-b844-ea503d06fae2" />
+
+``` Note for future Anukul
+If the output is taken straight from the terminal or std_out then just make a wrapper such that it will pass the solc version using --solc flag and you are good to go
+```
