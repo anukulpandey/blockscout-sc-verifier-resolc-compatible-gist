@@ -384,3 +384,69 @@ For older compiler versions i.e `<0.4.11` :
    
 For newer versions:
    it calls `foundry_compilers_new::solc::Solc::async_compile_output`
+
+
+16th-Sept-2025 @ 3:04 AM
+
+I figured out how to get the actual bytecode which is deployed from the polkavm or compiled from resolc 
+and i got it using this
+
+```
+use std::collections::{BTreeMap, BTreeSet};
+use resolc::test_utils::build_solidity;
+
+fn main() {
+    let source_code = r#"
+    // SPDX-License-Identifier: MIT
+    pragma solidity ^0.8.22;
+
+    contract Flipper {
+        bool private value;
+
+        constructor(bool initialValue) {
+            value = initialValue;
+        }
+
+        function flip() public {
+            value = !value;
+        }
+
+        function get() public view returns (bool) {
+            return value;
+        }
+    }
+    "#;
+    let mut sources = BTreeMap::new();
+    sources.insert("./test.sol".to_owned(), source_code.to_owned());
+
+    let mut remappings = BTreeSet::new();
+    remappings.insert("libraries/default/=./".to_owned());
+
+    let output = build_solidity(
+        sources,
+        BTreeMap::new(),
+        Some(remappings),
+        revive_llvm_context::OptimizerSettings::cycles(),
+    )
+    .expect("Test failure");
+
+    println!("{:?}",output)
+}
+
+```
+
+the Cargo.toml file looks like this as of now
+
+```
+[package]
+name = "solidity_compiler_cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+resolc = "0.3"
+anyhow = "1.0"
+serde_json = "1.0"
+hex = "0.4" 
+revive-llvm-context = "0.3.0"
+```
