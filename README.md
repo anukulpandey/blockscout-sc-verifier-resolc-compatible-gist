@@ -239,3 +239,43 @@ pub async fn compile<C: EvmCompiler>(
 
 hmm it fetches the compiler version from here, not sure how these compiler versions are there and why not single compiler from solc like i have, maybe they have it from somewhere else, should check from where the compiler is coming
 
+<img width="817" height="652" alt="Screenshot 2025-09-15 at 6 47 09 PM" src="https://github.com/user-attachments/assets/d69e25d1-829d-4cb5-bf6b-358a883d4de6" />
+
+found it here, in the solidity_verification
+
+```
+impl SolidityVerifierService {
+    pub async fn new(
+        settings: SoliditySettings,
+        compilers_threads_semaphore: Arc<Semaphore>,
+    ) -> anyhow::Result<Self> {
+        let solc_validator = Arc::new(SolcValidator::default());
+        let fetcher = common::initialize_fetcher(
+            settings.fetcher,
+            settings.compilers_dir.clone(),
+            settings.refresh_versions_schedule,
+            Some(solc_validator),
+        )
+        .await
+        .context("solidity fetcher initialization")?;
+
+        let compilers: EvmCompilersPool<SolcCompiler> =
+            EvmCompilersPool::new(fetcher, compilers_threads_semaphore);
+        compilers.load_from_dir(&settings.compilers_dir).await;
+
+        Ok(Self {
+            compilers: Arc::new(compilers),
+        })
+    }
+}
+
+```
+
+so compilers are downloaded from the fetcher service and stored in dir , from there it is fetched on the version which is required.
+Let it be lets see what all it has inside the compiler and from where is this compiler coming, is it solc or some other lib
+
+the file `smart-contract-verifier/src/verify/solc_compiler_cli.rs` is responsible for compilation etc.
+
+
+
+
