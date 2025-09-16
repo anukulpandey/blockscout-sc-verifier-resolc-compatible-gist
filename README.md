@@ -460,3 +460,21 @@ next step should be to analyse how this block is working and see the output code
 ``` Note for future Anukul
 If the output is taken straight from the terminal or std_out then just make a wrapper such that it will pass the solc version using --solc flag and you are good to go
 ```
+
+1:06 PM
+
+the command looks like this 
+
+```
+/var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/solidity-compilers/v0.8.22+commit.4fc1097e/solc --combined-json abi,bin,bin-runtime --optimize --optimize-runs 200 /var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/.tmpgwev2z/.sol
+```
+
+which is like 
+
+- solc path - which i can pass to the resolc
+- flag - combined-json need to check what to do or how to use it
+- optimize - also need to check whether it is available in resolc i dont think so
+- file_path
+
+  so i think we should do it one by one, the command should vary for each of these, like first the resolc should be used with the set path , then these --combined-json stuff
+  but prior to that lets check whether the output is logged in the console or what? like how are we getting the output.
