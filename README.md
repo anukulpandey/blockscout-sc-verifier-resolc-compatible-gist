@@ -478,3 +478,95 @@ which is like
 
   so i think we should do it one by one, the command should vary for each of these, like first the resolc should be used with the set path , then these --combined-json stuff
   but prior to that lets check whether the output is logged in the console or what? like how are we getting the output.
+
+
+Lets get all the commands first so that we know all the types
+
+1. Single File
+
+```
+/var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/solidity-compilers/v0.8.22+commit.4fc1097e/solc --combined-json abi,bin,bin-runtime --optimize /var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/.tmpVTopXW/contracts/Flipper.sol
+```
+
+2. Standard JSON
+
+```
+/var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/solidity-compilers/v0.8.22+commit.4fc1097e/solc --combined-json abi,bin,bin-runtime --optimize /var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/.tmp0Ef6un/contracts/Flipper.sol
+```
+
+3. Multi-part files
+
+```
+/var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/solidity-compilers/v0.8.22+commit.4fc1097e/solc --combined-json abi,bin,bin-runtime --optimize --optimize-runs 200 /var/folders/95/kg2c09hx00z4_5tg3c2kpz540000gn/T/.tmpegswfs/Flipper.sol
+```
+
+let's check in which format is the output or how are we getting the output and can I run some other command too?
+
+I replaced the CLI Compiler with this - i.e Now it uses resolc
+
+```
+pub async fn compile_using_cli(
+    compiler_path: &Path, // <-- this is the solc binary
+    input: &SolcInput,
+) -> Result<solc::CompilerOutput, SolcError> {
+    println!("anukul is here for compilation");
+
+    // `resolc` binary (can be absolute path if needed)
+    let resolc_bin = "resolc";
+
+    let output = {
+        let input = &input.0;
+        let input_args = types::InputArgs::from(input);
+        let input_files = types::InputFiles::try_from_compiler_input(input).await?;
+
+        // Start with original args from solc
+        let mut solc_args = input_args.build();
+
+        // Remove solc-style optimization flags
+        solc_args.retain(|arg| arg != "--optimize" && arg != "--optimize-runs");
+
+        // Add resolc-style optimization flag
+        solc_args.push("--optimization".to_string());
+        solc_args.push("z".to_string());
+
+        // Files (.sol)
+        let files = input_files.build()?; // e.g. ["/tmp/Flipper.sol"]
+
+        // Construct new arg order for resolc
+        let mut args = Vec::new();
+        args.extend(files.iter().map(|p| p.to_string_lossy().to_string())); // .sol files first
+        args.push("--solc".to_string());
+        args.push(compiler_path.display().to_string()); // actual solc binary
+        args.extend(solc_args.into_iter()); // compiler args
+
+        // Debug print
+        println!(
+            "[compile_using_cli] Running command:\n{} {}",
+            resolc_bin,
+            args.join(" ")
+        );
+
+        Command::new(resolc_bin)
+            .args(&args)
+            .stderr(Stdio::piped())
+            .stdout(Stdio::piped())
+            .output()
+            .await
+            .map_err(|err| SolcError::Io(SolcIoError::new(err, Path::new(resolc_bin))))?
+    };
+
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let compiler_output = if output.stderr.is_empty() {
+        let output_json: types::OutputJson = serde_json::from_slice(output.stdout.as_slice())?;
+        solc::CompilerOutput::try_from(output_json)?
+    } else {
+        solc::CompilerOutput {
+            errors: vec![compiler_error(stderr)],
+            sources: BTreeMap::new(),
+            contracts: BTreeMap::new(),
+        }
+    };
+    Ok(compiler_output)
+}
+```
+
