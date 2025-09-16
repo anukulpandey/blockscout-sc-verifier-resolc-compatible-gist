@@ -627,3 +627,21 @@ it returned
 ```
 
 so feels like the smart contract is verified and returns the proper output but somehow not stored in the database, what i can speculate is that it can be issue in storing to postgres.
+
+4:45 PM IST
+
+got this
+
+```
+0x41c37c250a6cdefc84c795d71c47399d96eb3eef813b (truncated)
+2025-09-16T11:14:21.202 [error] Task #PID<0.53169.0> started from #PID<0.9149.0> terminating
+** (MatchError) no match of right hand side value: %{"contracts/Flipper.sol" => "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.22;\n\ncontract Flipper {\n    bool private value;\n\n    constructor(bool initialValue) {\n        value = initialValue;\n    }\n\n    function flip() public {\n        value = !value;\n    }\n\n    function get() public view returns (bool) {\n        return value;\n    }\n}\n"}
+    (explorer 9.1.0) lib/explorer/smart_contract/solidity/publisher.ex:247: Explorer.SmartContract.Solidity.Publisher.process_rust_verifier_response/6
+    (explorer 9.1.0) lib/explorer/smart_contract/solidity/publisher_worker.ex:62: Explorer.SmartContract.Solidity.PublisherWorker.broadcast/4
+    (elixir 1.17.3) lib/task/supervised.ex:101: Task.Supervised.invoke_mfa/2
+Function: #Function<3.82049945/0 in Que.Job.perform/1>
+    Args: []
+2025-09-16T11:14:21.593 application=indexer fetcher=coin_balance_catchup count=100 error_count=100 [error] failed to fetch: 
+```
+
+which means that the response emitted by the smart-contract-verifier doesnt fit the input required by the blockscout explorer backend, so need to parse the response in that way from the `resolc` compiled result.
